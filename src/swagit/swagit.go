@@ -320,6 +320,11 @@ func parseStruct(data []string, packagePrefix string) (*SwaggerDocStruct, error)
 		return nil, nil
 	}
 
+	if structType == "interface" {
+		//skip interface
+		return nil, nil
+	}
+
 	if len(packagePrefix) != 0 {
 		packagePrefix = packagePrefix + "."
 	}

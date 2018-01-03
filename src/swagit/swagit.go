@@ -151,10 +151,14 @@ func log(args ...interface{}) {
 	}
 }
 
+const (
+	TestFilesExcludeSuffix = "_test.go"
+)
+
 func main() {
 	flag.Parse()
 
-	ext := ".go"
+	ext := `.go`
 
 	log("Hello")
 	log("Program is in debug mode")
@@ -378,8 +382,7 @@ func checkExt(ext string) []string {
 	filepath.Walk(pathS, func(path string, f os.FileInfo, _ error) error {
 		log("Walk path", path)
 		if !f.IsDir() {
-			r, err := regexp.MatchString(ext, f.Name())
-			if err == nil && r {
+			if strings.HasSuffix(path, ext) && !strings.HasSuffix(path, TestFilesExcludeSuffix) {
 				log("selected", path)
 				files = append(files, path)
 			}

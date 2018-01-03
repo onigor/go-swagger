@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -70,7 +71,7 @@ type SwaggerDocXMLStruct struct {
 }
 
 func (s SwaggerDocStruct) MarshalJSON() ([]byte, error) {
-	fmt.Println("in:SwaggerDocStruct")
+	log("in:SwaggerDocStruct")
 	type Alias SwaggerDocStruct
 	return json.Marshal(&struct {
 		Type string `json:"type"`
@@ -107,8 +108,8 @@ type SwaggerDocProperty struct {
 }
 
 func (s SwaggerDocProperty) MarshalJSON() ([]byte, error) {
-	fmt.Println("in:SwaggerDocProperty", s.Type)
-	fmt.Println("in:SwaggerDocProperty $ref", s.Ref)
+	log("in:SwaggerDocProperty", s.Type)
+	log("in:SwaggerDocProperty $ref", s.Ref)
 
 	if len(s.Ref) != 0 {
 		return json.Marshal(&struct {
@@ -130,10 +131,33 @@ func (s SwaggerDocProperty) MarshalJSON() ([]byte, error) {
 	})
 }
 
+const (
+	OutputFileMessage = "Swagger JSON Spec output file"
+	DebugMessage      = "Debug mode, print some steps"
+)
+
+var OutputFile string
+var DebugMode bool
+
+func init() {
+	flag.StringVar(&OutputFile, "o", "swagger.json", OutputFileMessage)
+	flag.BoolVar(&DebugMode, "d", false, DebugMessage)
+	// flag.StringVar(&gopherType, "g", defaultGopher, usage+" (shorthand)")
+}
+
+func log(args ...interface{}) {
+	if DebugMode {
+		fmt.Println(args...)
+	}
+}
+
 func main() {
+	flag.Parse()
+
 	ext := ".go"
 
-	fmt.Println("Hello")
+	log("Hello")
+	log("Program is in debug mode")
 
 	swg := SwaggerMainDocStruct{}
 
@@ -160,7 +184,7 @@ func main() {
 			}
 		}
 	} else {
-		fmt.Println("No files found with extension ", ext)
+		log("No files found with extension ", ext)
 		return
 	}
 	swg.Definitions = totalList
@@ -170,13 +194,20 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("JSON result", string(data))
-
+	finalOutputFilePath := filepath.Join(basePath, OutputFile)
+	err = ioutil.WriteFile(finalOutputFilePath, data, os.ModeAppend)
+	if err != nil {
+		log("Error writing to file", finalOutputFilePath)
+		fmt.Println(string(data))
+	} else {
+		fmt.Println("Spec file was successfully generated", finalOutputFilePath)
+	}
+	log("The end")
 }
 
 func parseFile(fPath string) ([]SwaggerDocStruct, error) {
 	result := []SwaggerDocStruct{}
-	fmt.Println("File path ", fPath)
+	log("File path ", fPath)
 
 	packagePrefix := ""
 
@@ -211,7 +242,7 @@ func parseFile(fPath string) ([]SwaggerDocStruct, error) {
 func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) {
 	// fmt.Printf("len=%d,data=%+s", len(data), )
 	for _, item := range data {
-		fmt.Println("item part=", strings.TrimSpace(string(item)))
+		log("item part=", strings.TrimSpace(string(item)))
 	}
 	if len(data) < 4 {
 		return SwaggerDocStruct{}, fmt.Errorf("parse error data=%s", data)
@@ -221,25 +252,27 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 	structName := data[1]
 	structType := data[2]
 	structBody := data[3]
+
+	result := SwaggerDocStruct{}
+	result.Type = string(structType)
+	result.Name = packagePrefix + string(structName)
+	result.XML = SwaggerDocXMLStruct{Name: result.Name}
+
 	if len(structBody) == 0 {
-		return SwaggerDocStruct{}, fmt.Errorf("empty struct")
+		return result, nil //fmt.Errorf("empty struct")
 	}
 
 	structBodyString := trimString(fixNewLine(structBody))
 	lines := strings.Split(structBodyString, "\n")
 
 	if len(lines) == 0 {
-		return SwaggerDocStruct{}, fmt.Errorf("empty struct 2")
+		return result, nil //fmt.Errorf("empty struct 2")
 	}
 
 	if len(packagePrefix) != 0 {
 		packagePrefix = packagePrefix + "."
 	}
 
-	result := SwaggerDocStruct{}
-	result.Type = string(structType)
-	result.Name = packagePrefix + string(structName)
-	result.XML = SwaggerDocXMLStruct{Name: result.Name}
 	result.Properties = map[string]SwaggerDocProperty{}
 
 	for index := 0; index < len(lines); index++ {
@@ -278,7 +311,7 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 		}
 	}
 
-	fmt.Println("____")
+	log("____")
 	return result, nil
 }
 
@@ -341,10 +374,11 @@ func checkExt(ext string) []string {
 	}
 	var files []string
 	filepath.Walk(pathS, func(path string, f os.FileInfo, _ error) error {
-		fmt.Println("Walk path", path)
+		log("Walk path", path)
 		if !f.IsDir() {
 			r, err := regexp.MatchString(ext, f.Name())
 			if err == nil && r {
+				log("selected", path)
 				files = append(files, path)
 			}
 		}

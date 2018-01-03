@@ -16,6 +16,10 @@ type Super struct {
 type SuperInterface interface {
 }
 
+type lowerCaseTestStruct struct {
+	loverCasePropertyName string
+}
+
 type Duper struct {
 	SuperDuperEmptyStruct
 	SuperDuperStruct
@@ -37,7 +41,8 @@ type TestArrayStruct struct {
 type All struct {
 	Super
 	SuperDuperEmptyStruct
-	SuperProp    string
-	DuperProp    string `json:"duperProp"`
-	NotEmptyProp int    //this is int property
+	loverCasePropertyName string
+	SuperProp             string
+	DuperProp             string `json:"duperProp"`
+	NotEmptyProp          int    //this is int property
 }

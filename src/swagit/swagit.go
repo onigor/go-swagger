@@ -285,25 +285,40 @@ func parseFile(fPath string) ([]SwaggerDocStruct, error) {
 		if err != nil {
 			return result, err
 		}
-		result = append(result, obj)
+		if obj != nil {
+			result = append(result, (*obj))
+		}
+
 	}
 
 	return result, nil
 }
 
-func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) {
+func firstLetterIsUpper(str string) bool {
+	if len(str) > 0 {
+		return strings.HasPrefix(str, strings.ToUpper(string(str[0:1])))
+	}
+	return false
+}
+
+func parseStruct(data []string, packagePrefix string) (*SwaggerDocStruct, error) {
 	// fmt.Printf("len=%d,data=%+s", len(data), )
 	for _, item := range data {
 		log("item part=", strings.TrimSpace(string(item)))
 	}
 	if len(data) < 4 {
-		return SwaggerDocStruct{}, fmt.Errorf("parse error data=%s", data)
+		return nil, fmt.Errorf("parse error data=%s", data)
 	}
 
 	// structFull := data[0]
 	structName := data[1]
 	structType := data[2]
 	structBody := data[3]
+
+	if !firstLetterIsUpper(structName) {
+		//do not parse unexposed structs
+		return nil, nil
+	}
 
 	result := SwaggerDocStruct{}
 	result.Type = string(structType)
@@ -312,7 +327,7 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 
 	if len(structBody) == 0 {
 		log("Error!", "empty struct")
-		return result, nil //fmt.Errorf("empty struct")
+		return &result, nil //fmt.Errorf("empty struct")
 	}
 
 	structBodyString := trimString(fixNewLine(structBody))
@@ -320,7 +335,7 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 
 	if len(lines) == 0 {
 		log("Error!", "empty struct 2")
-		return result, nil //fmt.Errorf("empty struct 2")
+		return &result, nil //fmt.Errorf("empty struct 2")
 	}
 
 	if len(packagePrefix) != 0 {
@@ -339,6 +354,11 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 			// result.Extend = append(result.Extend, lineParts[0])
 			// class extention
 			//load class now or later on sereliazation
+			continue
+		}
+
+		if !firstLetterIsUpper(lineParts[0]) {
+			continue
 		}
 
 		if len(lineParts) == 2 {
@@ -366,7 +386,7 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 	}
 
 	log("____")
-	return result, nil
+	return &result, nil
 }
 
 func inArray(arr []string, value string) bool {

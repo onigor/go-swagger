@@ -1,0 +1,22 @@
+{
+  "swagger":     "2.0",
+  "host":        "live.ooyala.com",
+  "basePath":    "/v3",
+  "schemes":     ["https"],
+  "externalDocs": {
+    "url":         "http://swagger.io",
+    "description": "Test"
+  },
+  "info": {
+    "description": "Test",
+    "version":     "3.0.0",
+    "title":       "Live Platform API DOCS",
+    "contact": {
+      "email": "live@ooyala.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url":  "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  }
+}

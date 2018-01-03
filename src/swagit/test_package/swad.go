@@ -26,6 +26,14 @@ type NotEmpty struct {
 	SuperDuperStruct
 }
 
+type TestArrayStruct struct {
+	Test                    []string
+	TestingMote             []Duper
+	TestEvenMoreWithPointer []*Duper
+	TestPointer             *[]Duper
+	TestStringPointer       *[]string
+}
+
 type All struct {
 	Super
 	SuperDuperEmptyStruct

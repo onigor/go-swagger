@@ -84,10 +84,27 @@ func (s SwaggerDocStruct) MarshalJSON() ([]byte, error) {
 	})
 }
 
+//todo return struct items->[]->items etc
+func arrayItemType(str string) string {
+	str = strings.TrimLeft(str, "*")
+	str = strings.TrimLeft(str, "[]")
+	str = strings.TrimLeft(str, "*")
+	if strings.HasPrefix(str, "*") || strings.HasPrefix(str, "[]") {
+		return arrayItemType(str)
+	}
+	return str
+}
+
 func correctType(str string) string {
 	if str == "interface" {
 		return "object"
 	}
+	str = strings.TrimLeft(str, "*")
+
+	if strings.HasPrefix(str, "[]") {
+		return "array"
+	}
+
 	str = strings.Replace(str, "struct", "object", -1)
 	//todo map[string]{something}
 	str = strings.Replace(str, "map[string]interface{}", "object", -1)
@@ -110,6 +127,38 @@ type SwaggerDocProperty struct {
 func (s SwaggerDocProperty) MarshalJSON() ([]byte, error) {
 	log("in:SwaggerDocProperty", s.Type)
 	log("in:SwaggerDocProperty $ref", s.Ref)
+	type Alias SwaggerDocProperty
+
+	t := correctType(s.Type)
+	if t == "array" {
+		ref := ""
+		subType := ""
+		if customType(arrayItemType(s.Type)) {
+			ref = "#/definitions/" + arrayItemType(s.Type)
+		} else {
+			subType = arrayItemType(s.Type)
+		}
+		type ItemsStruct struct {
+			Type string `json:"type,omitempty"`
+			Ref  string `json:"$ref,omitempty"`
+		}
+		return json.Marshal(&struct {
+			Type  string      `json:"type"`
+			Name  string      `json:"name,omitempty"`
+			Ref   string      `json:"$ref,omitempty"`
+			Items ItemsStruct `json:"items"`
+			*Alias
+		}{
+			Type: t,
+			Name: "",
+			Items: ItemsStruct{
+				Type: subType,
+				Ref:  ref,
+			},
+			Ref:   "",
+			Alias: (*Alias)(&s),
+		})
+	}
 
 	if len(s.Ref) != 0 {
 		return json.Marshal(&struct {
@@ -119,7 +168,6 @@ func (s SwaggerDocProperty) MarshalJSON() ([]byte, error) {
 		})
 	}
 
-	type Alias SwaggerDocProperty
 	return json.Marshal(&struct {
 		Type string `json:"type,omitempty"`
 		Name string `json:"name,omitempty"`
@@ -337,7 +385,7 @@ func customType(str string) bool {
 
 func parsePropertyKeyName(str string, def string) string {
 	validGoNotation := regexp.MustCompile("`.*`")
-	jsonPropertyName := regexp.MustCompile(`json\:\"(.*)\"`)
+	jsonPropertyName := regexp.MustCompile(`json\:\"((?:\w|,)+)\"`)
 	if foundStr := validGoNotation.FindString(str); len(foundStr) > 0 {
 		results := jsonPropertyName.FindStringSubmatch(str)
 		if len(results) > 1 {

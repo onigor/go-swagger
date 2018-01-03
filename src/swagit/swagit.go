@@ -99,6 +99,11 @@ func correctType(str string) string {
 	if str == "interface" {
 		return "object"
 	}
+
+	if str == "bool" {
+		return "boolean"
+	}
+
 	str = strings.TrimLeft(str, "*")
 
 	if strings.HasPrefix(str, "[]") {

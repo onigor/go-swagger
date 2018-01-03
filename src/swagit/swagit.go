@@ -259,6 +259,7 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 	result.XML = SwaggerDocXMLStruct{Name: result.Name}
 
 	if len(structBody) == 0 {
+		log("Error!", "empty struct")
 		return result, nil //fmt.Errorf("empty struct")
 	}
 
@@ -266,6 +267,7 @@ func parseStruct(data []string, packagePrefix string) (SwaggerDocStruct, error) 
 	lines := strings.Split(structBodyString, "\n")
 
 	if len(lines) == 0 {
+		log("Error!", "empty struct 2")
 		return result, nil //fmt.Errorf("empty struct 2")
 	}
 

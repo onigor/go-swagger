@@ -320,6 +320,10 @@ func parseStruct(data []string, packagePrefix string) (*SwaggerDocStruct, error)
 		return nil, nil
 	}
 
+	if len(packagePrefix) != 0 {
+		packagePrefix = packagePrefix + "."
+	}
+
 	result := SwaggerDocStruct{}
 	result.Type = string(structType)
 	result.Name = packagePrefix + string(structName)
@@ -336,10 +340,6 @@ func parseStruct(data []string, packagePrefix string) (*SwaggerDocStruct, error)
 	if len(lines) == 0 {
 		log("Error!", "empty struct 2")
 		return &result, nil //fmt.Errorf("empty struct 2")
-	}
-
-	if len(packagePrefix) != 0 {
-		packagePrefix = packagePrefix + "."
 	}
 
 	result.Properties = map[string]SwaggerDocProperty{}
@@ -375,8 +375,8 @@ func parseStruct(data []string, packagePrefix string) (*SwaggerDocStruct, error)
 			key := parsePropertyKeyName(line, lineParts[0])
 			swdp := SwaggerDocProperty{}
 			swdp.Type = lineParts[1]
-			if customType(swdp.Type) {
-				swdp.Ref = "#/definitions/" + swdp.Type
+			if customType(arrayItemType(swdp.Type)) {
+				swdp.Ref = "#/definitions/" + arrayItemType(swdp.Type)
 			}
 			swdp.Description += extractComments(line)
 
@@ -391,7 +391,7 @@ func parseStruct(data []string, packagePrefix string) (*SwaggerDocStruct, error)
 
 func inArray(arr []string, value string) bool {
 	for index := 0; index < len(arr); index++ {
-		if strings.Contains(value, arr[index]) {
+		if value == arr[index] {
 			return true
 		}
 	}
